@@ -1,0 +1,109 @@
+import { appendFile, mkdir, readFile } from "node:fs/promises";
+import path from "node:path";
+
+export type WaitlistEntry = {
+  intent: "waitlist";
+  email: string;
+  name?: string;
+  phone?: string;
+  question?: string;
+  source: "hero" | "early-access";
+  createdAt: string;
+};
+
+const STORE_DIR = path.join(process.cwd(), "data");
+const STORE_FILE = path.join(STORE_DIR, "waitlist.jsonl");
+
+/**
+ * Deliberately permissive: this rejects typos, not unusual-but-valid
+ * addresses. No single-quote, no consecutive dots, must have a real TLD.
+ */
+const EMAIL = /^[^\s@,'"]+@[^\s@.,'"]+(\.[^\s@.,'"]+)+$/;
+
+export function normaliseEmail(raw: string) {
+  return raw.trim().toLowerCase();
+}
+
+export function isValidEmail(raw: string) {
+  const e = normaliseEmail(raw);
+  return e.length >= 6 && e.length <= 254 && EMAIL.test(e);
+}
+
+/** Digits only, so +91 98765 43210 and 9876543210 dedupe to the same person. */
+export function normalisePhone(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.length > 10 ? `+${digits}` : `+91${digits}`;
+}
+
+export async function alreadyJoined(email: string) {
+  try {
+    const contents = await readFile(STORE_FILE, "utf8");
+    return contents
+      .split("\n")
+      .filter(Boolean)
+      .some((line) => {
+        try {
+          return (JSON.parse(line) as WaitlistEntry).email === email;
+        } catch {
+          return false;
+        }
+      });
+  } catch {
+    // No file yet means nobody has joined yet.
+    return false;
+  }
+}
+
+export async function persist(entry: WaitlistEntry) {
+  await mkdir(STORE_DIR, { recursive: true });
+  await appendFile(STORE_FILE, `${JSON.stringify(entry)}\n`, "utf8");
+}
+
+export async function countJoined() {
+  try {
+    const contents = await readFile(STORE_FILE, "utf8");
+    return contents.split("\n").filter(Boolean).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fires a notification to the founders inbox. Entirely optional: without
+ * RESEND_API_KEY set this is a no-op, and a failure here never fails the
+ * signup, because the JSONL append is the source of truth.
+ */
+export async function notifyFounders(entry: WaitlistEntry, position: number) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { sent: false, reason: "no-api-key" as const };
+
+  try {
+    const { Resend } = await import("resend");
+    const resend = new Resend(key);
+
+    const lines = [
+      `Email     ${entry.email}`,
+      `Name      ${entry.name || "--"}`,
+      `Phone     ${entry.phone || "--"}`,
+      `Source    ${entry.source}`,
+      `Position  ${position}`,
+      "",
+      "Question",
+      entry.question || "--",
+    ].join("\n");
+
+    await resend.emails.send({
+      from: process.env.WAITLIST_FROM ?? "Delta <onboarding@resend.dev>",
+      to: (process.env.WAITLIST_TO ?? "reach.delta.in@gmail.com").split(","),
+      replyTo: entry.email,
+      subject: `Delta waitlist #${position} - ${entry.email}`,
+      text: lines,
+    });
+
+    return { sent: true as const };
+  } catch (error) {
+    console.error("[waitlist] founder notification failed:", error);
+    return { sent: false, reason: "send-failed" as const };
+  }
+}

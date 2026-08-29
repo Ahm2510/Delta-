@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Delta (Δ) — pre-launch landing page
 
-## Getting Started
-
-First, run the development server:
+Single-page marketing and validation site. Next.js 16 (App Router) · TypeScript · Tailwind v4 · Framer Motion.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Waitlist
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Both forms (hero and the full early-access block) POST to `/api/waitlist`.
 
-## Learn More
+**Storage.** Every signup appends to `data/waitlist.jsonl` — gitignored, one JSON object per line. Emails are lower-cased and de-duplicated; phones are normalised to `+91XXXXXXXXXX` so `98765 43210` and `+91 98765 43210` are the same person.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# how many people have signed up
+wc -l < data/waitlist.jsonl
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Email notification.** Optional. Copy `.env.example` to `.env.local` and add a Resend key:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+RESEND_API_KEY=re_xxxxxxxx
+WAITLIST_FROM="Delta <onboarding@resend.dev>"
+WAITLIST_TO=reach.delta.in@gmail.com
+```
 
-## Deploy on Vercel
+Without a key, signups still persist — the notification is simply skipped. A failed send never fails a signup, because the JSONL append is the source of truth.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> On Vercel, the filesystem is ephemeral: `data/waitlist.jsonl` will not survive a redeploy. Set `RESEND_API_KEY` so you get every signup by email, and swap `persist()` / `alreadyJoined()` in `lib/waitlist.ts` for a real table when you want durable storage. Those two functions are the only place that touches the store.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Design system
+
+Tokens live in `app/globals.css` under `@theme` — colours, fonts and easing. Nothing hard-codes a hex outside that block.
+
+- **Canvas** `#090a0f`, surfaces `#0c0e15` → `#161a23`, hairlines `#1b1f28` → `#333a48`
+- **Accent** a muted celadon: `--color-delta` `#a8c5b4` for the Δ mark, status dots and positive figures; `--color-delta-fill` `#8fb39b` for filled buttons, always with near-black (`#06070b`) label text — 8.6:1. No outer glows anywhere; depth comes from the `inner-edge` utility.
+- **`--color-warn`** `#d9a441` is status, not brand: it appears only on "behind pace", "bill due" and an over-average figure.
+
+Changing the accent means editing those three tokens in `@theme` plus two hard-coded spots: the ambient wash in `components/ui/rails.tsx` and the first card tint in `components/widgets/card-stack.tsx`.
+- **Type** Cabinet Grotesk (display, via Fontshare) · Geist (body/UI) · Geist Mono (every numeral, eyebrow and step number, tabular). If Fontshare is unreachable the display stack falls back to Geist, which Next self-hosts.
+
+## Pre-launch posture
+
+Delta has not shipped, and the widgets carry realistic merchant names and rupee amounts, so the page says so in five places: the hero badge, the copy under the hero form, the early-access subhead, the form footer, and the footer disclosure. Every mock UI also carries a `<PreviewNote>` reading "Product preview · sample data". **If you add another mock widget, add the note under it.** Remove all of this only when the product is actually live.
+
+## Conventions worth keeping
+
+- **Every numeral goes through `<Num>`** (`components/ui/num.tsx`). That is what enforces mono + tabular figures.
+- **The mock data reconciles.** The digest's food-delivery rows sum to exactly ₹4,120; ₹25,600 set aside against ₹1,42,000 of inflow is the quoted 18%; the category bars total the ₹21,680 in the dashboard header; September at ₹21,680 sits ₹2,303 under the six-month average of ₹23,983. If you edit a figure, edit the rows under it too.
+- **Card mockups stay generic** (`Card ending 4821`). Never attach an invented reward structure to a real, named bank product.
+- **Above-the-fold content uses `<Reveal mount>`**, not scroll-into-view, so it never waits on an IntersectionObserver.
+- **`prefers-reduced-motion` is honoured everywhere.** `Reveal` renders a plain div, parallax and scrub are skipped, and counters jump straight to their value.
+
+## Structure
+
+```
+app/
+  layout.tsx            fonts, metadata
+  page.tsx              section order
+  api/waitlist/route.ts validation + persistence + notification
+lib/waitlist.ts         store, normalisation, Resend
+components/
+  ui/                   primitives (Num, Reveal, Parallax, CountUp, Rails, ...)
+  widgets/              the interactive mock UIs
+  sections/             page sections
+```

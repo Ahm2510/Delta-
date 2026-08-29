@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ---- Surfaces: near-black, never pure #000 ---- */
+  --color-canvas: #090a0f;
+  --color-surface: #0c0e15;
+  --color-surface-2: #11141c;
+  --color-surface-3: #161a23;
+
+  /* ---- Hairlines: the whole structural language of the page ---- */
+  --color-line: #1b1f28;
+  --color-line-2: #262c37;
+  --color-line-3: #333a48;
+
+  /* ---- Ink hierarchy ---- */
+  --color-ink: #f0f3f7;
+  --color-ink-2: #9aa4b4;
+  --color-ink-3: #626c7d;
+  --color-ink-4: #454d5c;
+
+  /* ---- Single accent. A muted celadon: green keeps its "money moved the
+          right way" meaning without the neon. Fills use the deeper tone. ---- */
+  --color-delta: #a8c5b4;
+  --color-delta-fill: #8fb39b;
+  --color-delta-ink: #06070b;
+  --color-delta-dim: #16221c;
+
+  /* ---- Status only, never decorative ---- */
+  --color-warn: #d9a441;
+
+  --font-display: "Cabinet Grotesk", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    background-color: var(--color-canvas);
+    scroll-behavior: smooth;
+    /* clears the sticky nav when jumping to an anchor */
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Every numeral on this page is mono and tabular. Load-bearing. */
+  .font-mono,
+  [class*="font-mono"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background-color: var(--color-delta);
+    color: var(--color-delta-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-delta);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  input,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-4);
+  }
+
+  /* Chrome/Safari autofill repaints our dark inputs white without this */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-surface-2) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-canvas);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-2);
+    border: 3px solid var(--color-canvas);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-line-3);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility hairline-grid {
+  /* the faint measured graph paper that sits under dark sections */
+  background-image: linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+@utility inner-edge {
+  /* physical edge refraction instead of an outer glow */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), inset 0 0 0 1px rgb(255 255 255 / 0.015);
+}
+
+@keyframes delta-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes delta-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes delta-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@utility pulse-dot {
+  animation: delta-pulse 2.4s var(--ease-out-expo) infinite;
+}
+
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-surface-3) 40%,
+    var(--color-surface-2) 80%
+  );
+  background-size: 200% 100%;
+  animation: delta-shimmer 1.6s linear infinite;
 }
