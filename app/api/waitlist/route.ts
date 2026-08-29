@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   alreadyJoined,
+  appendToSheet,
   countJoined,
   isValidEmail,
   normaliseEmail,
@@ -76,8 +77,8 @@ export async function POST(request: Request) {
     await persist(entry);
     const position = await countJoined();
 
-    // Never let the notification path affect what the visitor sees.
-    await notifyFounders(entry, position);
+    // Never let either side-channel affect what the visitor sees.
+    await Promise.all([notifyFounders(entry, position), appendToSheet(entry, position)]);
 
     return NextResponse.json({
       ok: true,

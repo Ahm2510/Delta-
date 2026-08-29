@@ -89,7 +89,8 @@ export async function countJoined() {
 /**
  * Fires a notification to the founders inbox. Entirely optional: without
  * RESEND_API_KEY set this is a no-op, and a failure here never fails the
- * signup, because the JSONL append is the source of truth.
+ * signup -- the local file is best-effort (see STORE_DIR above), so this and
+ * appendToSheet below are the durable records once configured.
  */
 export async function notifyFounders(entry: WaitlistEntry, position: number) {
   const key = process.env.RESEND_API_KEY;
@@ -121,6 +122,31 @@ export async function notifyFounders(entry: WaitlistEntry, position: number) {
     return { sent: true as const };
   } catch (error) {
     console.error("[waitlist] founder notification failed:", error);
+    return { sent: false, reason: "send-failed" as const };
+  }
+}
+
+/**
+ * Appends the signup as a row in a Google Sheet, via a Google Apps Script
+ * Web App URL (see README for the five-minute setup -- no service account
+ * or Cloud Console needed). Same contract as notifyFounders: a no-op
+ * without GOOGLE_SHEETS_WEBHOOK_URL set, and a failure here never fails
+ * the signup itself.
+ */
+export async function appendToSheet(entry: WaitlistEntry, position: number) {
+  const url = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+  if (!url) return { sent: false, reason: "no-webhook-url" as const };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...entry, position }),
+    });
+    if (!res.ok) throw new Error(`Sheets webhook responded ${res.status}`);
+    return { sent: true as const };
+  } catch (error) {
+    console.error("[waitlist] sheet append failed:", error);
     return { sent: false, reason: "send-failed" as const };
   }
 }
