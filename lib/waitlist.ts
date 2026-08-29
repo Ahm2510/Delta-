@@ -1,4 +1,5 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 export type WaitlistEntry = {
@@ -11,7 +12,17 @@ export type WaitlistEntry = {
   createdAt: string;
 };
 
-const STORE_DIR = path.join(process.cwd(), "data");
+/**
+ * Vercel's deployment bundle is read-only outside /tmp -- writing to a
+ * project-relative path throws there. Locally, keep using a project-relative
+ * file so `wc -l data/waitlist.jsonl` from the README still works.
+ * /tmp on Vercel is itself ephemeral (wiped on cold start, not shared across
+ * instances), so this is a best-effort local record, not durable storage --
+ * the founder notification email is the real one once RESEND_API_KEY is set.
+ */
+const STORE_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), "delta-waitlist")
+  : path.join(process.cwd(), "data");
 const STORE_FILE = path.join(STORE_DIR, "waitlist.jsonl");
 
 /**
@@ -56,8 +67,14 @@ export async function alreadyJoined(email: string) {
 }
 
 export async function persist(entry: WaitlistEntry) {
-  await mkdir(STORE_DIR, { recursive: true });
-  await appendFile(STORE_FILE, `${JSON.stringify(entry)}\n`, "utf8");
+  try {
+    await mkdir(STORE_DIR, { recursive: true });
+    await appendFile(STORE_FILE, `${JSON.stringify(entry)}\n`, "utf8");
+  } catch (error) {
+    // A local write failure must never fail the signup itself -- the founder
+    // notification email is the actual record once Resend is configured.
+    console.error("[waitlist] failed to persist locally:", error);
+  }
 }
 
 export async function countJoined() {
