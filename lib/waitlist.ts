@@ -126,27 +126,46 @@ export async function notifyFounders(entry: WaitlistEntry, position: number) {
   }
 }
 
+export type SheetResult =
+  | { ok: true; alreadyJoined: boolean; position: number }
+  | { ok: false };
+
 /**
  * Appends the signup as a row in a Google Sheet, via a Google Apps Script
  * Web App URL (see README for the five-minute setup -- no service account
- * or Cloud Console needed). Same contract as notifyFounders: a no-op
- * without GOOGLE_SHEETS_WEBHOOK_URL set, and a failure here never fails
- * the signup itself.
+ * or Cloud Console needed).
+ *
+ * Unlike the local file, the Sheet is a real shared store, so it is the
+ * thing that computes and returns the actual position and does the actual
+ * dedup check -- the local file's countJoined()/alreadyJoined() can't be
+ * trusted for either on Vercel (see STORE_DIR above). Callers should treat
+ * `ok: true` as authoritative and only fall back to the local file when
+ * this returns `ok: false` (unset, unreachable, or a bad response).
  */
-export async function appendToSheet(entry: WaitlistEntry, position: number) {
+export async function appendToSheet(entry: WaitlistEntry): Promise<SheetResult> {
   const url = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
-  if (!url) return { sent: false, reason: "no-webhook-url" as const };
+  if (!url) return { ok: false };
 
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...entry, position }),
+      body: JSON.stringify(entry),
     });
     if (!res.ok) throw new Error(`Sheets webhook responded ${res.status}`);
-    return { sent: true as const };
+
+    const data = (await res.json()) as {
+      ok?: boolean;
+      alreadyJoined?: boolean;
+      position?: number;
+    };
+    if (!data.ok || typeof data.position !== "number") {
+      throw new Error("Sheets webhook returned an unexpected response shape");
+    }
+
+    return { ok: true, alreadyJoined: !!data.alreadyJoined, position: data.position };
   } catch (error) {
     console.error("[waitlist] sheet append failed:", error);
-    return { sent: false, reason: "send-failed" as const };
+    return { ok: false };
   }
 }

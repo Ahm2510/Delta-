@@ -55,14 +55,6 @@ export async function POST(request: Request) {
   const email = normaliseEmail(rawEmail);
 
   try {
-    if (await alreadyJoined(email)) {
-      return NextResponse.json({
-        ok: true,
-        status: "already",
-        message: "You are already on the list. Your place is held.",
-      });
-    }
-
     const rawPhone = str(body.phone, 24);
     const entry: WaitlistEntry = {
       intent: "waitlist",
@@ -74,11 +66,37 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    await persist(entry);
-    const position = await countJoined();
+    // The Sheet is a real shared store; the local file is best-effort only
+    // and can't be trusted alone on Vercel (see lib/waitlist.ts). When the
+    // Sheet answers, it is authoritative for both dedup and position.
+    const sheet = await appendToSheet(entry);
+    let status: "joined" | "already";
+    let position: number;
 
-    // Never let either side-channel affect what the visitor sees.
-    await Promise.all([notifyFounders(entry, position), appendToSheet(entry, position)]);
+    if (sheet.ok) {
+      status = sheet.alreadyJoined ? "already" : "joined";
+      position = sheet.position;
+      await persist(entry); // best-effort local copy too; harmless if it fails
+    } else if (await alreadyJoined(email)) {
+      status = "already";
+      position = await countJoined();
+    } else {
+      await persist(entry);
+      position = await countJoined();
+      status = "joined";
+    }
+
+    if (status === "already") {
+      return NextResponse.json({
+        ok: true,
+        status: "already",
+        position,
+        message: "You are already on the list. Your place is held.",
+      });
+    }
+
+    // Never let the notification affect what the visitor sees.
+    await notifyFounders(entry, position);
 
     return NextResponse.json({
       ok: true,
