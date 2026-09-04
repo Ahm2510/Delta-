@@ -3,6 +3,7 @@ import { Rails } from "@/components/ui/rails";
 import { Hero } from "@/components/sections/hero";
 import { Problem } from "@/components/sections/problem";
 import { HowItWorks } from "@/components/sections/how-it-works";
+import { DataSafety } from "@/components/sections/data-safety";
 import { Privacy } from "@/components/sections/privacy";
 import {
   AlwaysCurrent,
@@ -29,6 +30,7 @@ export default function Page() {
         <Problem />
         <HowItWorks />
         <Privacy />
+        <DataSafety />
         <MomentYouSpend />
         <AlwaysCurrent />
         <CardsDecoded />
