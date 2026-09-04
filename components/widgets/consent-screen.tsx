@@ -21,7 +21,7 @@ export function ConsentScreen() {
         <div className="flex items-center gap-2 border-b border-line px-5 py-3.5">
           <Bank size={13} weight="bold" className="text-ink-3" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-3">
-            Your bank &middot; consent screen
+            Your bank &middot; approval screen
           </span>
         </div>
 
@@ -44,13 +44,13 @@ export function ConsentScreen() {
             <div className="flex items-center justify-between py-3">
               <dt className="text-[12px] text-ink-3">Permission</dt>
               <dd className="text-[12px] text-ink-2">
-                <Num className="text-[12px] text-delta">Read-only</Num>
+                <Num className="text-[12px] text-delta">View only</Num>
               </dd>
             </div>
             <div className="flex items-center justify-between py-3">
               <dt className="text-[12px] text-ink-3">Valid until</dt>
               <dd className="text-[12px] text-ink-2">
-                You choose, <Num className="text-ink-2">revocable</Num> anytime
+                You decide. <Num className="text-ink-2">Cancel anytime</Num>
               </dd>
             </div>
           </dl>

@@ -79,8 +79,8 @@ export function EarlyAccess() {
               <div className="mt-9 flex items-start gap-3 border-t border-line pt-7">
                 <ShieldCheck size={15} weight="bold" className="mt-0.5 shrink-0 text-delta" />
                 <p className="max-w-[42ch] text-[13px] leading-relaxed text-ink-3">
-                  Read-only, revocable anytime, and Delta never sees your bank
-                  password.{" "}
+                  Delta can only view your account, never touch it, and Delta never
+                  sees your bank password. Cancel anytime.{" "}
                   <a
                     href="#privacy"
                     className="text-ink-2 underline decoration-line-3 underline-offset-4 transition-colors duration-200 hover:text-delta hover:decoration-delta/50"

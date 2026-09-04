@@ -11,7 +11,7 @@ const STEPS = [
   {
     n: "01",
     title: "Connect",
-    body: "Every account, one consent, via India's Account Aggregator framework, or a statement upload. Read-only, revocable anytime.",
+    body: "Every account, one approval, via India's official bank-data system, or a statement upload. Delta can only view it, and you can cancel anytime.",
   },
   {
     n: "02",

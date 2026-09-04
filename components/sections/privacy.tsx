@@ -19,27 +19,27 @@ import { ConsentScreen } from "../widgets/consent-screen";
 const POINTS = [
   {
     icon: Eye,
-    question: "Can Delta move my money?",
-    lead: "No.",
-    body: "There is no channel for that in the connection at all. It can read a balance. It cannot place a trade, make a payment, or move a single rupee.",
+    question: "Can Delta spend or move my money?",
+    lead: "Never.",
+    body: "Delta can only look at your balance and your past spending. It has no way to send money, pay a bill, invest, or buy anything on your behalf. That option does not exist, for anyone.",
   },
   {
     icon: Key,
-    question: "Do you ever see my bank password?",
-    lead: "No.",
-    body: "Approval happens on your bank's own screen, or the AA app's. Delta asks for access. It is never shown a login.",
+    question: "Will you see my bank password?",
+    lead: "Never.",
+    body: "You type your password only inside your own bank's app, never inside Delta. We ask permission to look. We are never shown the key.",
   },
   {
     icon: Certificate,
-    question: "Is this actually regulated, or a workaround?",
-    lead: "Regulated.",
-    body: "Account Aggregators are licensed as NBFC-AAs by the Reserve Bank of India. This is the same category of entity your bank already answers to.",
+    question: "Is this actually safe, or a workaround?",
+    lead: "RBI-approved.",
+    body: "This connection runs on India's official system for sharing account information safely. It is watched over by the Reserve Bank of India, the same authority that already regulates your bank.",
   },
   {
     icon: ShieldCheck,
-    question: "Can I undo this later?",
-    lead: "Anytime.",
-    body: "Pull access from your bank or the AA app in one tap. Nothing lingers once you do, and nothing needs Delta's permission to happen.",
+    question: "Can I stop this later?",
+    lead: "Whenever you want.",
+    body: "Turn it off from your own bank's app in a few taps. The moment you do, access ends completely. Nothing keeps running in the background.",
   },
 ];
 
