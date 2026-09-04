@@ -1,10 +1,36 @@
-import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Eye, Prohibit, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import { CountUp } from "../ui/count-up";
 import { DeltaMark } from "../ui/delta-mark";
 import { Reveal } from "../ui/reveal";
 import { Section } from "../ui/section";
 import { SectionHeading } from "../ui/section-heading";
 import { EarlyAccessForm } from "../waitlist";
+
+/**
+ * The trust gap here is distinct from the "why it can be trusted" section
+ * earlier on the page -- that one is about the AI not hallucinating numbers.
+ * This one is about handing a pre-launch startup read access to a bank
+ * account, which is the actual hesitation at the point someone is about to
+ * type an email into this form. Every claim below is true of the Account
+ * Aggregator framework itself, not a promise specific to Delta.
+ */
+const TRUST_POINTS = [
+  {
+    icon: Eye,
+    title: "Read-only",
+    body: "Delta can see transactions and holdings. It cannot move money, place trades, or make payments.",
+  },
+  {
+    icon: Prohibit,
+    title: "Your login stays yours",
+    body: "Delta never sees your bank password. Consent runs through your bank or the AA app, not through us.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Revoke anytime",
+    body: "The Account Aggregator framework is RBI-regulated. Pull access at any time, from your bank, with one tap.",
+  },
+];
 
 /* ------------------------------------------------------------ 10. why now */
 
@@ -73,6 +99,26 @@ export function EarlyAccess() {
                 money question you can never quite answer. Early members are onboarded
                 first, in order.
               </p>
+            </Reveal>
+
+            <Reveal index={3}>
+              <ul className="mt-9 flex max-w-[46ch] flex-col gap-5 border-t border-line pt-7">
+                {TRUST_POINTS.map((point) => (
+                  <li key={point.title} className="flex items-start gap-3.5">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line-2 bg-surface">
+                      <point.icon size={13} weight="bold" className="text-delta" />
+                    </span>
+                    <span>
+                      <span className="block text-[13px] font-medium text-ink-2">
+                        {point.title}
+                      </span>
+                      <span className="mt-1 block text-[13px] leading-relaxed text-ink-3">
+                        {point.body}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </Reveal>
           </div>
         </div>
